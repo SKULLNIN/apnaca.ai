@@ -1,82 +1,51 @@
 import requests
+import fitz  # PyMuPDF
+import re
 import pandas as pd
-from bs4 import BeautifulSoup
-import time
-import random
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 
-# Define the URL
-URL = "https://www.incometax.gov.in/iec/foportal/downloads/income-tax-returns"
-
-# List of User-Agents to rotate and avoid blocking
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/109.0",
-]
-
-# Function to fetch webpage content with retries using requests
-def fetch_data_with_requests(url, max_retries=5):
-    for attempt in range(1, max_retries + 1):
-        headers = {"User-Agent": random.choice(USER_AGENTS)}
-        try:
-            response = requests.get(url, headers=headers, timeout=10)
-
-            if response.status_code == 200:
-                return response.text
-            elif response.status_code == 503:
-                print(f"⚠️ Attempt {attempt}: Server is unavailable (503). Retrying in {attempt * 3} seconds...")
-                time.sleep(attempt * 3)
-            else:
-                print(f"❌ HTTP Error {response.status_code}. Check the URL or headers.")
-                return None
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Request failed: {e}")
-            return None
-    return None
-
-# Function to fetch webpage content using Selenium
-def fetch_data_with_selenium(url):
-    options = Options()
-    options.headless = True
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    driver.get(url)
-    time.sleep(5)  # Wait for the page to load
-    html_content = driver.page_source
-    driver.quit()
-    return html_content
-
-# Fetch the webpage content
-html_content = fetch_data_with_requests(URL)
-
-if not html_content:
-    print(" Failed to fetch data with requests. Trying with Selenium...")
-    html_content = fetch_data_with_selenium(URL)
-
-if html_content:
-    soup = BeautifulSoup(html_content, 'html.parser')
-
-    # Save intermediate HTML content for debugging
-    with open("intermediate_html.html", "w", encoding="utf-8") as file:
-        file.write(html_content)
-
-    # Find tables
-    tables = soup.find_all("table")
-
-    if tables:
-        df = pd.read_html(str(tables[0]))[0]  # Convert first table to Pandas DataFrame
-
-        # Data Cleaning
-        df.dropna(inplace=True)
-
-        # Save to CSV
-        df.to_csv("tax_data.csv", index=False)
-
-        print("✅ Tax data extracted and saved successfully!")
-    else:
-        print("⚠️ No tables found on the page.")
+pdf_url = "https://www.incometax.gov.in/iec/foportal/sites/default/files/2024-04/CBDT_e-Filing_ITR%201_Validation%20Rules_AY2024-25_V1.0..pdf"
+response = requests.get(pdf_url)
+if response.status_code == 200:
+    with open("downloaded_pdf.pdf", 'wb') as pdf_file:
+        pdf_file.write(response.content)
+    print("PDF file downloaded successfully.")
 else:
-    print("❌ Failed to fetch data after multiple retries.")
+    print(f"Failed to download the PDF file. Status code: {response.status_code}")
+
+# Main Extract Text idhar se from the PDF
+def extract_text_from_pdf(file_path):
+    doc = fitz.open(file_path)
+    text = ""
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        text += page.get_text()
+    return text
+
+pdf_file_path = "downloaded_pdf.pdf"
+extracted_text = extract_text_from_pdf(pdf_file_path)
+print("Text extracted from PDF.")
+
+# OCR method durse code me karuga abhi ke liye Clean the Extracted Text
+def clean_text(text):
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    text = text.lower()
+    return text
+
+cleaned_text = clean_text(extracted_text)
+print("Text cleaned successfully.")
+
+# Step 4: Save the Cleaned Data
+with open("cleaned_text.txt", 'w', encoding='utf-8') as txt_file:
+    txt_file.write(cleaned_text)
+print("Cleaned text saved to cleaned_text.txt.")
+
+# remove all unwanted data and  Prepare Data for Fine-Tuning
+data = {
+    'question': ["What are the validation rules for ITR 1?"],
+    'answer': [cleaned_text]
+}
+df = pd.DataFrame(data)
+df.to_csv("fine_tune_data.csv", index=False)
+print("Data prepared for fine-tuning and saved to fine_tune_data.csv.")
+
