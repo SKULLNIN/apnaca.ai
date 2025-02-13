@@ -53,7 +53,7 @@ def fetch_data_with_selenium(url):
 html_content = fetch_data_with_requests(URL)
 
 if not html_content:
-    print("❌ Failed to fetch data with requests. Trying with Selenium...")
+    print(" Failed to fetch data with requests. Trying with Selenium...")
     html_content = fetch_data_with_selenium(URL)
 
 if html_content:
