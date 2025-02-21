@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tax Assistant</title>
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --secondary-blue: #3b82f6;
+            --accent-orange: #f59e0b;
+            --background-light: #f8fafc;
+            --text-dark: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
+            padding: 2rem;
+            color: var(--text-dark);
+        }
+
+        .container {
+            background: white;
+            max-width: 500px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .container:hover {
+            transform: translateY(-2px);
+        }
+
+        h2 {
+            color: var(--primary-blue);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-orange);
+            display: inline-block;
+        }
+
+        .input-group {
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+
+        button {
+            background: linear-gradient(45deg, var(--primary-blue), var(--secondary-blue));
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .response-box {
+            background: var(--background-light);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .ai-analysis {
+            background: #e0fffc;
+            border-left: 4px solid #ff9800;
+            margin-top: 1rem;
+            padding: 1rem;
+        }
+
+        .loading {
+            color: #64748b;
+            font-style: italic;
+        }
+
+.toggle-button {
+    background: #f0f4ff;
+    color: #1e40af;  /* Added dark blue text color */
+    border: none;
+    padding: 0.5rem 1rem;
+    margin-top: 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s;
+
+}
+        
+    </style>
+</head>
+<body>
+
+<!-- AI Chatbot Section -->
+<div class="container">
+    <h2>🤖 Tax AI Assistant</h2>
+    <div class="input-group">
+        <label for="userInput">Your Tax Question</label>
+        <textarea id="userInput" rows="4" 
+                  placeholder="Ask about Indian tax laws..."
+                  aria-label="Enter tax question"></textarea>
+    </div>
+    <button onclick="askChatbot()">Get Answer</button>
+    <div id="chatResponse" class="response-box"></div>
+</div>
+
+<!-- Tax Calculator Section -->
+<div class="container">
+    <h2>🧮 Tax Calculator</h2>
+    <div class="input-group">
+        <label for="income">Annual Income (₹)</label>
+        <input type="number" id="income" 
+               placeholder="Enter gross annual income"
+               aria-label="Annual income">
+    </div>
+
+    <div class="input-group">
+        <label for="deduction80C">Deductions (80C) (₹)</label>
+        <input type="number" id="deduction80C" 
+               placeholder="EPF, PPF, insurance"
+               aria-label="80C deductions">
+    </div>
+
+    <div class="input-group">
+        <label for="hra">HRA Exemption (₹)</label>
+        <input type="number" id="hra" 
+               placeholder="House rent allowance"
+               aria-label="HRA exemption">
+    </div>
+
+    <div class="input-group">
+        <label for="medical">Medical Insurance (₹)</label>
+        <input type="number" id="medical" 
+               placeholder="Health insurance"
+               aria-label="Medical insurance">
+    </div>
+
+    <div class="input-group">
+        <label for="taxRegime">Tax Regime</label>
+        <select id="taxRegime" aria-label="Tax regime">
+            <option value="new">New Regime</option>
+            <option value="old">Old Regime</option>
+        </select>
+    </div>
+    <button onclick="calculateTax()">Calculate Tax</button>
+    <div id="taxResult" class="response-box"></div>
+</div>
+
+<!-- Fraud Detection Section -->
+<div class="container">
+    <h2>🔍 Fraud Detection</h2>
+    <div class="input-group">
+        <label for="fraudIncome">Declared Income (₹)</label>
+        <input type="number" id="fraudIncome" 
+               placeholder="Reported income"
+               aria-label="Declared income">
+    </div>
+
+    <div class="input-group">
+        <label for="fraudTaxPaid">Tax Paid (₹)</label>
+        <input type="number" id="fraudTaxPaid" 
+               placeholder="Tax paid amount"
+               aria-label="Tax paid">
+    </div>
+
+    <div class="input-group">
+        <label for="fraudDeductions">Deductions (₹)</label>
+        <input type="number" id="fraudDeductions" 
+               placeholder="Total deductions"
+               aria-label="Deductions claimed">
+    </div>
+    <button onclick="detectFraud()">Analyze Fraud Risk</button>
+    <div id="fraudResult" class="response-box"></div>
+</div>
+
+<script>
+    // Enhanced AI explanation functions
+async function explainSection(section) {
+    const prompts = {
+        'income': 'Explain taxable income calculation under Indian tax laws with examples',
+        '80C': 'Explain Section 80C deductions with investment options and limits',
+        'hra': 'Explain HRA exemption calculation with salary structure examples',
+        'medical': 'Explain medical insurance deductions under Section 80D with family coverage examples'
+    };
+
+    const helpDiv = document.getElementById(`${section}Help`);
+    helpDiv.innerHTML = '<div class="loading">Analyzing...</div>';
+
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "gpt-4o",
+                messages: [{
+                    role: "system",
+                    content: `As a tax consultant, explain ${section} in simple terms with Indian examples. Include: 
+                    1. Relevant sections of Income Tax Act
+                    2. Calculation methodology
+                    3. Common mistakes to avoid`
+                }, {
+                    role: "user",
+                    content: prompts[section]
+                }]
+            })
+        });
+
+        const data = await response.json();
+        const formattedResponse = formatResponse(data.choices[0].message.content);
+        
+        helpDiv.innerHTML = `
+            <div class="technical-details">
+                ${formattedResponse}
+                <button class="toggle-button" onclick="toggleExample('${section}')">
+                    Show Calculation Example ▼
+                </button>
+                <div id="${section}Example" class="calculation-example" style="display:none">
+                    ${await generateCalculationExample(section)}
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        helpDiv.innerHTML = 'Could not load explanation';
+    }
+}
+
+function formatResponse(text) {
+    return text
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/(\d+\.)\s/g, '<br><strong>$1</strong> ')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
+async function generateCalculationExample(section) {
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "gpt-4o",
+                messages: [{
+                    role: "system",
+                    content: `Create numerical example for ${section} with:
+                    1. Sample input values
+                    2. Step-by-step calculations
+                    3. Final result interpretation`
+                }]
+            })
+        });
+
+        const data = await response.json();
+        return data.choices[0].message.content.replace(/\n/g, '<br>');
+    } catch (error) {
+        return 'Example currently unavailable';
+    }
+}
+// WARNING: This frontend-only implementation exposes your API key
+// Replace with backend implementation for production use
+const OPENAI_API_KEY = '';
+
+// Universal AI Query Function
+async function askGPT(context, userData, targetId) {
+    const targetElement = document.getElementById(targetId);
+    targetElement.innerHTML = '<div class="loading">Analyzing with AI...</div>';
+
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "gpt-4o",
+                messages: [{
+                    role: "system",
+                    content: `Act as a tax expert with 20 years experience. ${context}`
+                }, {
+                    role: "user",
+                    content: userData
+                }]
+            })
+        });
+
+        const data = await response.json();
+        const aiResponse = data.choices[0].message.content;
+        
+        targetElement.innerHTML = `
+            <div class="ai-analysis">
+                <h4>AI Analysis:</h4>
+                <p>${aiResponse}</p>
+                <button class="toggle-button" onclick="toggleDetails('${targetId}')">
+                    Show Technical Details
+                </button>
+                <div id="${targetId}-details" style="display:none">
+                    ${generateTechnicalDetails(context)}
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        targetElement.innerHTML = '<div class="response-box">Error in AI analysis</div>';
+    }
+}
+
+// Tax Calculation with AI Explanation
+async function calculateTax() {
+    const income = parseFloat(document.getElementById('income').value) || 0;
+    const deduction80C = parseFloat(document.getElementById('deduction80C').value) || 0;
+    const hra = parseFloat(document.getElementById('hra').value) || 0;
+    const medical = parseFloat(document.getElementById('medical').value) || 0;
+    const regime = document.getElementById('taxRegime').value;
+
+    let taxableIncome = income;
+    if (regime === 'old') {
+        taxableIncome -= (deduction80C + hra + medical);
+    }
+
+    let tax = 0;
+    const slabs = regime === 'new' ? 
+        [[250000, 0], [500000, 0.05], [1000000, 0.2], [Infinity, 0.3]] :
+        [[250000, 0], [500000, 0.05], [1000000, 0.2], [Infinity, 0.3]];
+
+    for (let i = 1; i < slabs.length; i++) {
+        const [prevLimit, prevRate] = slabs[i-1];
+        const [currLimit, currRate] = slabs[i];
+        if (taxableIncome > prevLimit) {
+            tax += (Math.min(taxableIncome, currLimit) - prevLimit) * currRate;
+        }
+    }
+
+    const taxHtml = `
+        <h3>Tax Liability: ₹${tax.toFixed(2)}</h3>
+        <button onclick="askGPT('Explain this tax calculation in simple terms:', 
+            'Income: ₹${income}, Regime: ${regime}, Tax: ₹${tax.toFixed(2)}', 
+            'taxResult')">
+            Get AI Explanation
+        </button>
+    `;
+    document.getElementById('taxResult').innerHTML = taxHtml;
+}
+
+// Fraud Detection with AI Analysis
+async function detectFraud() {
+    const income = parseFloat(document.getElementById('fraudIncome').value) || 0;
+    const taxPaid = parseFloat(document.getElementById('fraudTaxPaid').value) || 0;
+    const deductions = parseFloat(document.getElementById('fraudDeductions').value) || 0;
+
+    const taxRate = (taxPaid / income) * 100 || 0;
+    let riskLevel = 'Low';
+    if (taxRate < 5) riskLevel = 'High';
+    else if (taxRate < 10) riskLevel = 'Medium';
+
+    const fraudHtml = `
+        <h3>Fraud Risk: ${riskLevel}</h3>
+        <button onclick="askGPT('Analyze potential tax fraud patterns:', 
+            'Income: ₹${income}, Tax Paid: ₹${taxPaid}, Deductions: ₹${deductions}', 
+            'fraudResult')">
+            Detailed AI Analysis
+        </button>
+    `;
+    document.getElementById('fraudResult').innerHTML = fraudHtml;
+}
+
+// Chatbot Functionality
+async function askChatbot() {
+    const question = document.getElementById('userInput').value.trim();
+    if (!question) return;
+
+    askGPT('Answer concisely with relevant Indian tax laws and sections:', 
+           question, 'chatResponse');
+}
+
+// Helper Functions
+function toggleDetails(elementId) {
+    const details = document.getElementById(`${elementId}-details`);
+    details.style.display = details.style.display === 'none' ? 'block' : 'none';
+}
+
+function generateTechnicalDetails(context) {
+    if (context.includes('tax calculation')) {
+        return '<p>Technical breakdown based on Income Tax Act...</p>';
+    }
+    if (context.includes('fraud')) {
+        return '<p>Fraud detection parameters and thresholds...</p>';
+    }
+    return '<p>Detailed technical analysis...</p>';
+}
+</script>
+
