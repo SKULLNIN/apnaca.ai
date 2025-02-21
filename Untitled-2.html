@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CA AI Chatbot & Tax Fraud Detection</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        .container { width: 400px; margin: auto; border: 2px solid #333; padding: 15px; border-radius: 10px; }
+        textarea, input, select { width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 5px; }
+        button { background: blue; color: white; padding: 10px; border: none; cursor: pointer; }
+        .response-box { margin-top: 10px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>CA AI Chatbot</h2>
+    <textarea id="userInput" placeholder="Ask about Indian tax rules..."></textarea>
+    <button onclick="askChatbot()">Ask</button>
+    <div id="chatResponse" class="response-box"></div>
+</div>
+
+<div class="container">
+    <h2>Tax Calculator</h2>
+    <label>Income (₹):</label> <input type="number" id="income"><br>
+    <label>Deductions under 80C (₹):</label> <input type="number" id="deduction80C"><br>
+    <label>HRA Exemption (₹):</label> <input type="number" id="hra"><br>
+    <label>Medical Insurance (₹):</label> <input type="number" id="medical"><br>
+    <label>Choose Tax Regime:</label>
+    <select id="taxRegime">
+        <option value="new">New Regime</option>
+        <option value="old">Old Regime</option>
+    </select>
+    <button onclick="calculateTax()">Calculate Tax</button>
+    <p id="taxResult" class="response-box"></p>
+</div>
+
+<div class="container">
+    <h2>Tax Fraud Detection</h2>
+    <label>Income (₹):</label> <input type="number" id="fraudIncome"><br>
+    <label>Tax Paid (₹):</label> <input type="number" id="fraudTaxPaid"><br>
+    <label>Deductions (₹):</label> <input type="number" id="fraudDeductions"><br>
+    <button onclick="detectFraud()">Check for Fraud</button>
+    <p id="fraudResult" class="response-box"></p>
+</div>
+
+<script>
+async function askChatbot() {
+    let userQuestion = document.getElementById("userInput").value;
+    if (!userQuestion.trim()) return;
+
+    document.getElementById("chatResponse").innerText = "Thinking...";
+    
+    try {
+        let response = await fetch("http://localhost:5000/ask-gpt", {  // Use your hosted backend URL
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: userQuestion })
+        });
+
+        let data = await response.json();
+        document.getElementById("chatResponse").innerText = data.response;
+    } catch (error) {
+        document.getElementById("chatResponse").innerText = "Error fetching response.";
+    }
+}
+
+function calculateTax() {
+    let income = parseFloat(document.getElementById('income').value);
+    let deduction80C = parseFloat(document.getElementById('deduction80C').value) || 0;
+    let hra = parseFloat(document.getElementById('hra').value) || 0;
+    let medical = parseFloat(document.getElementById('medical').value) || 0;
+    let taxRegime = document.getElementById('taxRegime').value;
+    
+    if (isNaN(income) || income <= 0) {
+        document.getElementById('taxResult').innerText = "Please enter a valid income amount.";
+        return;
+    }
+
+    let taxableIncome = income;
+    if (taxRegime === "old") {
+        taxableIncome -= (deduction80C + hra + medical);
+    }
+
+    let tax = 0;
+    if (taxRegime === "new") {
+        if (taxableIncome <= 250000) tax = 0;
+        else if (taxableIncome <= 500000) tax = (taxableIncome - 250000) * 0.05;
+        else if (taxableIncome <= 1000000) tax = 12500 + (taxableIncome - 500000) * 0.2;
+        else tax = 112500 + (taxableIncome - 1000000) * 0.3;
+    } else {
+        if (taxableIncome <= 250000) tax = 0;
+        else if (taxableIncome <= 500000) tax = (taxableIncome - 250000) * 0.05;
+        else if (taxableIncome <= 1000000) tax = 12500 + (taxableIncome - 500000) * 0.2;
+        else tax = 112500 + (taxableIncome - 1000000) * 0.3;
+    }
+
+    document.getElementById('taxResult').innerText = "Estimated Tax: ₹" + tax.toFixed(2);
+}
+</script>
+
+</body>
+</html>
