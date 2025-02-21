@@ -1,0 +1,52 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { OpenAI } = require('openai');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// AI Processing Endpoint
+app.post('/api/process-ai', async (req, res) => {
+  try {
+    const { context, userData } = req.body;
+    
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `As a senior tax expert with 20+ years experience, ${context}`
+        },
+        {
+          role: "user",
+          content: userData
+        }
+      ],
+      temperature: 0.3
+    });
+
+    res.json({
+      success: true,
+      response: completion.choices[0].message.content
+    });
+    
+  } catch (error) {
+    console.error('AI Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'AI processing failed'
+    });
+  }
+});
+
+// Start server
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
