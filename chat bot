@@ -194,7 +194,7 @@
 <script>
 // WARNING: This frontend-only implementation exposes your API key
 // Replace with backend implementation for production use
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = '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';
 
 // Universal AI Query Function
 async function askGPT(context, userData, targetId) {
